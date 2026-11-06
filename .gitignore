@@ -1,0 +1,48 @@
+# PyCharm / IntelliJ: configuracion local del editor
+.idea/
+*.iml
+
+# Entornos virtuales de Python
+.venv/
+venv/
+env/
+ENV/
+
+# Archivos compilados y caches de Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pytype/
+.pyre/
+
+# Cobertura de pruebas
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Construccion y empaquetado
+/build/
+/dist/
+*.egg-info/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Variables y credenciales locales; conservar plantillas
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.swp
+*~
