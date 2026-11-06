@@ -1,1 +1,1 @@
-# Clasificaci-n-de-se-ales-senoidales-con-CNN-y-ONNX-Runtime
+# Clasificación de señales senoidales con CNN y ONNX Runtime
