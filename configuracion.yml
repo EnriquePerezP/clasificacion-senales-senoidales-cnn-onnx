@@ -1,0 +1,16 @@
+#Configuracion para la generacion de señales senoidal, cuadrada y trinagular
+
+parametros_de_muestreo:
+  # Cantidad de muestras utilizadas por segundo para representar la señal.
+  frecuencia_muestreo: 8000  # Hz
+  # Cantidad de muestras que conforman cada señal.
+  numero_muestras: 1024
+
+parametros_de_la_senal:
+  rango_de_frecuencias:
+    frecuencia_minima: 100  # Hz
+    frecuencia_maxima: 1000  # Hz
+  #rango de amplitudes
+  rango_de_fases:
+    fase_minima: 0  # Grados
+    fase_maxima: 360  # Grados
