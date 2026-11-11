@@ -11,6 +11,9 @@ Parametros de la senal:
     Frecuencia minima: 100  # Hz
     Frecuencia maxima: 1000  # Hz
   #rango de amplitudes
+  Rango de amplitudes:
+    Amplitud minima: 0.25
+    Amplitud maxima: 1
   Rango de fases:
     Fase minima: 0  # Grados
     Fase maxima: 360  # Grados
@@ -31,4 +34,5 @@ Ruido:
     Ruido maximo: 0.20
 
 
-
+#configuraciones de ia
+Semilla: 42
