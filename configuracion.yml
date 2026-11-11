@@ -14,3 +14,21 @@ Parametros de la senal:
   Rango de fases:
     Fase minima: 0  # Grados
     Fase maxima: 360  # Grados
+
+
+#cantidad de señales
+
+Cantidad de senales:
+  Cantidad de senoidales: 300
+  Cantidad de cuadradas: 150
+  Cantidad de triangulares: 150
+
+#funciones de ruido
+Ruido:
+  Activacion de ruido: False
+  Intensidad de ruido:
+    Ruido minimo: 0.05
+    Ruido maximo: 0.20
+
+
+
