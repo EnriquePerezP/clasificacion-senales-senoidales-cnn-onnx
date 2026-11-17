@@ -28,10 +28,15 @@ Cantidad de senales:
 
 #funciones de ruido
 Ruido:
-  Activacion de ruido: False
+  Activacion de ruido: True
   Intensidad de ruido:
     Ruido minimo: 0.05
     Ruido maximo: 0.20
+    # Intensidades sugeridas para las primeras pruebas.
+    Ruido muy bajo: 0.05
+    Ruido bajo: 0.10
+    Ruido medio: 0.20
+    Ruido alto: 0.40
 
 
 #configuraciones de ia
