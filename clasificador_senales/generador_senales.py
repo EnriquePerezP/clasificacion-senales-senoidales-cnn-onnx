@@ -3,7 +3,8 @@ import yaml
 import numpy as np
 
 def cargar_configuracion():
-    ruta = Path(__file__).with_name("configuracion.yml")
+    # La configuración está en la raíz del proyecto, un nivel arriba.
+    ruta = Path(__file__).resolve().parent.parent / "configuracion.yml"
 
     with ruta.open("r", encoding="utf-8") as archivo:
         return yaml.safe_load(archivo)
