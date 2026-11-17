@@ -41,3 +41,13 @@ Ruido:
 
 #configuraciones de ia
 Semilla: 42
+
+Division de datos:
+  # 70 % para aprender, 15 % para validar y 15 % para la evaluacion final.
+  Proporcion de entrenamiento: 0.70
+  Proporcion de validacion: 0.15
+  Proporcion de prueba: 0.15
+
+Entrenamiento:
+  # Cantidad de señales que la CNN procesara juntas durante cada paso.
+  Tamano de lote: 32
