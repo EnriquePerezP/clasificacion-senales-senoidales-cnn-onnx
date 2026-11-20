@@ -51,3 +51,7 @@ Division de datos:
 Entrenamiento:
   # Cantidad de señales que la CNN procesara juntas durante cada paso.
   Tamano de lote: 32
+  # Cantidad de recorridos completos por los datos de entrenamiento.
+  Numero de epocas: 20
+  # Tamaño del paso que usa Adam al actualizar los parámetros de la CNN.
+  Tasa de aprendizaje: 0.001
