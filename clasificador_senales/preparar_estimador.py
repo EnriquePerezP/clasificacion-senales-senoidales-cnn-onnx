@@ -18,7 +18,7 @@ from clasificador_senales.generador_senales import (
     NUMERO_MUESTRAS,
 )
 from clasificador_senales.dataset import RUTA_DATASET, SEMILLA
-from clasificador_senales.division_datos import (
+from clasificador_senales.clasificador_cnn.division_datos import (
     PROPORCION_ENTRENAMIENTO,
     PROPORCION_PRUEBA,
     PROPORCION_VALIDACION,
