@@ -10,7 +10,7 @@ if __package__ in (None, ""):
     raiz_proyecto = Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(raiz_proyecto))
 
-from clasificador_senales.generador_senales import NUMERO_MUESTRAS
+from modelos.generador_senales import NUMERO_MUESTRAS
 
 
 class DetectorSenoidalCNN(nn.Module):

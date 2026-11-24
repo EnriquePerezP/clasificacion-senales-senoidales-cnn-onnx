@@ -8,7 +8,7 @@ import numpy as np
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clasificador_senales.generador_senales import (
+from modelos.generador_senales import (
     AMPLITUD_MAXIMA,
     AMPLITUD_MINIMA,
     CONFIGURACION,
@@ -22,7 +22,7 @@ from clasificador_senales.generador_senales import (
     generar_senoidal,
     generar_triangular,
 )
-from clasificador_senales.ruido import agregar_ruido
+from modelos.ruido import agregar_ruido
 
 # La clase 1 contiene senoidales; la clase 0, cuadradas y triangulares.
 # Las cantidades actuales dan 300 ejemplos por clase.

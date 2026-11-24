@@ -9,14 +9,14 @@ from torch import nn
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from clasificador_senales.clasificador_cnn.division_datos import (
+from modelos.clasificador_cnn.division_datos import (
     crear_cargadores,
     preparar_datos,
 )
-from clasificador_senales.clasificador_cnn.entrenar_modelo import RUTA_MEJOR_MODELO
-from clasificador_senales.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
-from clasificador_senales.dataset import SEMILLA
-from clasificador_senales.generador_senales import CONFIGURACION, NUMERO_MUESTRAS
+from modelos.clasificador_cnn.entrenar_modelo import RUTA_MEJOR_MODELO
+from modelos.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
+from modelos.dataset import SEMILLA
+from modelos.generador_senales import CONFIGURACION, NUMERO_MUESTRAS
 
 
 PARAMETROS_EVALUACION = CONFIGURACION["Evaluacion"]

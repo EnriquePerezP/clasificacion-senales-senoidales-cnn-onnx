@@ -11,7 +11,7 @@ import numpy as np
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clasificador_senales.dataset import RUTA_DATASET
+from modelos.dataset import RUTA_DATASET
 
 
 def buscar_senal_por_id(identificador, ruta_dataset=RUTA_DATASET):
@@ -23,7 +23,7 @@ def buscar_senal_por_id(identificador, ruta_dataset=RUTA_DATASET):
     except FileNotFoundError as error:
         mensaje = f"No existe el dataset en {ruta_dataset}."
         if ruta_dataset == RUTA_DATASET:
-            mensaje += " Genéralo con python -m clasificador_senales.dataset."
+            mensaje += " Genéralo con python -m modelos.dataset."
         raise FileNotFoundError(mensaje) from error
 
     with archivo:

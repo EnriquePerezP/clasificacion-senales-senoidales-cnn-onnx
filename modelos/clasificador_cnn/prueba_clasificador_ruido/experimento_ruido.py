@@ -12,27 +12,27 @@ from torch.utils.data import DataLoader, TensorDataset
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from clasificador_senales.clasificador_cnn.division_datos import (
+from modelos.clasificador_cnn.division_datos import (
     TAMANO_LOTE,
     crear_cargadores,
     preparar_datos,
 )
-from clasificador_senales.clasificador_cnn.entrenar_modelo import (
+from modelos.clasificador_cnn.entrenar_modelo import (
     crear_componentes_entrenamiento,
     entrenar_varias_epocas,
 )
-from clasificador_senales.clasificador_cnn.evaluacion_modelo import (
+from modelos.clasificador_cnn.evaluacion_modelo import (
     cargar_modelo_entrenado,
     evaluar_modelo,
 )
-from clasificador_senales.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
-from clasificador_senales.dataset import (
+from modelos.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
+from modelos.dataset import (
     INTENSIDAD_RUIDO_MAXIMA,
     INTENSIDAD_RUIDO_MINIMA,
     SEMILLA,
     crear_dataset,
 )
-from clasificador_senales.ruido import (
+from modelos.ruido import (
     RUIDO_ALTO,
     RUIDO_BAJO,
     RUIDO_MEDIO,

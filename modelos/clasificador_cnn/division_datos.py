@@ -9,10 +9,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 # Permite ejecutar este archivo directamente desde cualquier carpeta.
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from clasificador_senales.dataset import RUTA_DATASET, SEMILLA
-from clasificador_senales.generador_senales import CONFIGURACION, NUMERO_MUESTRAS
+from modelos.dataset import RUTA_DATASET, SEMILLA
+from modelos.generador_senales import CONFIGURACION, NUMERO_MUESTRAS
 
 
 PARAMETROS_DIVISION = CONFIGURACION["Division de datos"]

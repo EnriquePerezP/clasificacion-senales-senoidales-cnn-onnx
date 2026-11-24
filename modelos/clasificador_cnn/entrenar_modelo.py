@@ -10,12 +10,12 @@ from torch import nn
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from clasificador_senales.clasificador_cnn.division_datos import (
+from modelos.clasificador_cnn.division_datos import (
     PARAMETROS_ENTRENAMIENTO,
     preparar_cargadores,
 )
-from clasificador_senales.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
-from clasificador_senales.dataset import SEMILLA
+from modelos.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
+from modelos.dataset import SEMILLA
 
 
 TASA_APRENDIZAJE = PARAMETROS_ENTRENAMIENTO["Tasa de aprendizaje"]

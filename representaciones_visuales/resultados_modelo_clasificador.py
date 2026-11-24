@@ -13,7 +13,7 @@ from matplotlib.patches import Ellipse
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clasificador_senales.generador_senales import FRECUENCIA_MUESTREO
+from modelos.generador_senales import FRECUENCIA_MUESTREO
 
 
 CARPETA_RESULTADOS = Path(__file__).resolve().parent / "resultados"
@@ -360,7 +360,7 @@ def main():
     )
     argumentos = analizador.parse_args()
 
-    from clasificador_senales.clasificador_cnn.evaluacion_modelo import (
+    from modelos.clasificador_cnn.evaluacion_modelo import (
         main as ejecutar_evaluacion,
     )
 

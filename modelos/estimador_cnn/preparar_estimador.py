@@ -8,17 +8,17 @@ from torch.utils.data import DataLoader, TensorDataset
 
 # Permite ejecutar este archivo directamente desde cualquier carpeta.
 if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from clasificador_senales.generador_senales import (
+from modelos.generador_senales import (
     AMPLITUD_MAXIMA,
     AMPLITUD_MINIMA,
     FRECUENCIA_MAXIMA,
     FRECUENCIA_MINIMA,
     NUMERO_MUESTRAS,
 )
-from clasificador_senales.dataset import RUTA_DATASET, SEMILLA
-from clasificador_senales.clasificador_cnn.division_datos import (
+from modelos.dataset import RUTA_DATASET, SEMILLA
+from modelos.clasificador_cnn.division_datos import (
     PROPORCION_ENTRENAMIENTO,
     PROPORCION_PRUEBA,
     PROPORCION_VALIDACION,

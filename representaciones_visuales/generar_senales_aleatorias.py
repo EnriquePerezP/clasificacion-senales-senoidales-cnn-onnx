@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clasificador_senales.generador_senales import (
+from modelos.generador_senales import (
     AMPLITUD_MAXIMA,
     AMPLITUD_MINIMA,
     FASE_MAXIMA,

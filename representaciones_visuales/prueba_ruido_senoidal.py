@@ -8,8 +8,8 @@ import numpy as np
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from clasificador_senales.generador_senales import generar_senoidal
-from clasificador_senales.ruido import (
+from modelos.generador_senales import generar_senoidal
+from modelos.ruido import (
     CONFIGURACION,
     RUIDO_ACTIVADO,
     RUIDO_ALTO,
