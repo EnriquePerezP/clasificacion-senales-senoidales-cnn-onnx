@@ -55,10 +55,7 @@ Entrenamiento:
   Numero de epocas: 20
   # Tamaño del paso que usa Adam al actualizar los parámetros de la CNN.
   Tasa de aprendizaje: 0.001
-<<<<<<< HEAD
-=======
 
 Evaluacion:
   # Probabilidad mínima para clasificar una señal como senoidal.
   Umbral de clasificacion: 0.5
->>>>>>> 1ed79d9 (Agregar la evaluacion del clasificador de senoidal)

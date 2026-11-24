@@ -241,8 +241,8 @@ def mostrar_resultado(resultado, informacion_modelo, ruta_modelo):
     )
 
 
-def main():
-    """Carga el modelo y lo evalúa una sola vez con el grupo de prueba."""
+def main(mostrar=True):
+    """Evalúa el modelo guardado y genera las gráficas del grupo de prueba."""
 
     torch.manual_seed(SEMILLA)
     dispositivo = torch.device("cpu")
@@ -271,21 +271,16 @@ def main():
         ruta_modelo=RUTA_MEJOR_MODELO,
     )
 
-    # Las gráficas son opcionales cuando el módulo todavía no está disponible.
-    try:
-        from clasificador_senales.clasificador_cnn.visualizar_evaluacion import (
-            crear_visualizaciones,
-        )
-    except ModuleNotFoundError as error:
-        if error.name != "clasificador_senales.clasificador_cnn.visualizar_evaluacion":
-            raise
-        return
+    from representaciones_visuales.resultados_modelo_clasificador import (
+        crear_visualizaciones,
+    )
 
     crear_visualizaciones(
         resultado,
         modelo=modelo,
         cargador_prueba=cargadores["prueba"],
         tipos=divisiones["prueba"]["tipos"],
+        mostrar=mostrar,
     )
 
 
