@@ -146,7 +146,9 @@ def mostrar_resultado(resultado, informacion_modelo, ruta_modelo):
         )
 
 
-def main():
+def evaluar_estimador_guardado():
+    """Evalúa el modelo guardado y devuelve las muestras usadas en la prueba."""
+
     dispositivo = torch.device("cpu")
     modelo, informacion = cargar_estimador(dispositivo=dispositivo)
     if modelo.numero_muestras != NUMERO_MUESTRAS:
@@ -163,6 +165,11 @@ def main():
         prueba["parametros_reales"],
         dispositivo,
     )
+    return resultado, informacion, prueba["muestras"]
+
+
+def main():
+    resultado, informacion, _ = evaluar_estimador_guardado()
     mostrar_resultado(resultado, informacion, RUTA_MEJOR_ESTIMADOR)
 
 
