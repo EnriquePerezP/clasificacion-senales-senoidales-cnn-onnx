@@ -1,15 +1,23 @@
+import sys
+from math import isfinite
+from numbers import Real
 from pathlib import Path
 
 import torch
 from torch import nn
 
-from .crear_dataset import SEMILLA
-from .modelo_estimador import EstimadorParametrosCNN
-from .preparar_estimacion import preparar_cargadores_estimacion
+# Permite ejecutar este archivo directamente desde cualquier carpeta.
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from modelos.clasificador_cnn.division_datos import PARAMETROS_ENTRENAMIENTO
+from modelos.dataset import SEMILLA
+from modelos.estimador_cnn.modelo_estimador import EstimadorParametrosCNN
+from modelos.estimador_cnn.preparar_estimador import preparar_cargadores_estimacion
 
 
-TASA_APRENDIZAJE = 0.001
-NUMERO_EPOCAS = 60
+TASA_APRENDIZAJE = PARAMETROS_ENTRENAMIENTO["Tasa de aprendizaje"]
+NUMERO_EPOCAS = PARAMETROS_ENTRENAMIENTO["Numero de epocas"]
 
 CARPETA_MODELOS = Path(__file__).resolve().parent / "modelos"
 RUTA_MEJOR_ESTIMADOR = CARPETA_MODELOS / "estimador_parametros_cnn.pt"
@@ -21,8 +29,10 @@ def crear_componentes_entrenamiento(
 ):
     """Crea la medida de error y el optimizador del estimador."""
 
-    if tasa_aprendizaje <= 0:
-        raise ValueError("La tasa de aprendizaje debe ser mayor que cero.")
+    if not isinstance(tasa_aprendizaje, Real) or isinstance(tasa_aprendizaje, bool):
+        raise TypeError("La tasa de aprendizaje debe ser un numero.")
+    if not isfinite(tasa_aprendizaje) or tasa_aprendizaje <= 0:
+        raise ValueError("La tasa de aprendizaje debe ser finita y mayor que cero.")
 
     # MSELoss mide la distancia entre los cuatro valores esperados y los
     # cuatro valores calculados por la CNN.
@@ -196,7 +206,10 @@ def main():
     print("Inicio del entrenamiento del estimador")
     print(f"Senoidales de entrenamiento: {len(cargadores['entrenamiento'].dataset)}")
     print(f"Senoidales de validacion: {len(cargadores['validacion'].dataset)}")
+    print(f"Muestras por senal: {modelo.numero_muestras}")
+    print(f"Tamano del lote: {cargadores['entrenamiento'].batch_size}")
     print(f"Numero de epocas: {NUMERO_EPOCAS}")
+    print(f"Tasa de aprendizaje: {TASA_APRENDIZAJE}")
 
     resultado = entrenar_estimador(
         modelo,
