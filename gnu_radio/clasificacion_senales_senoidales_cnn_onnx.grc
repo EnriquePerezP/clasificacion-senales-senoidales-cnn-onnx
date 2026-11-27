@@ -1,12 +1,13 @@
 options:
   parameters:
-    author: angel
+    author: "\xC1ngel Enrique P\xE9rez"
     catch_exceptions: 'True'
     category: '[GRC Hier Blocks]'
     cmake_opt: ''
     comment: ''
-    copyright: ''
-    description: ''
+    copyright: "\xC1ngel Enrique P\xE9rez"
+    description: "Flujo de GNU Radio que ejecuta modelos CNN con ONNX Runtime para\
+      \ detectar se\xF1ales senoidales y estimar su frecuencia, amplitud y fase"
     gen_cmake: 'On'
     gen_linking: dynamic
     generate_options: qt_gui
@@ -22,7 +23,7 @@ options:
     run_options: prompt
     sizing_mode: fixed
     thread_safe_setters: ''
-    title: Not titled yet
+    title: "Clasificaci\xF3n de se\xF1ales senoidales con CNN y ONNX Runtime"
     window_size: (1000,1000)
   states:
     bus_sink: false
@@ -33,16 +34,221 @@ options:
     state: enabled
 
 blocks:
-- name: samp_rate
-  id: variable
+- name: amplitud
+  id: variable_qtgui_range
   parameters:
-    comment: ''
-    value: '32000'
+    comment: Rango de amplitudes
+    gui_hint: 0,2,1,1
+    label: Amplitud
+    min_len: '250'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0.25'
+    step: '0.05'
+    stop: '1.0'
+    value: '0.75'
+    widget: counter_slider
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [200, 12]
+    coordinate: [888, 20.0]
+    rotation: 0
+    state: enabled
+- name: frecuencia
+  id: variable_qtgui_range
+  parameters:
+    comment: Rango de frecuencias
+    gui_hint: 0,1,1,1
+    label: Frecuencia (Hz)
+    min_len: '250'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '100'
+    step: '10'
+    stop: '1000'
+    value: '440'
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [728, 20.0]
+    rotation: 0
+    state: enabled
+- name: numero_muestras
+  id: variable
+  parameters:
+    comment: ''
+    value: '1024'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [384, 16.0]
+    rotation: 0
+    state: enabled
+- name: ruido_relativo
+  id: variable_qtgui_range
+  parameters:
+    comment: Cero desactiva el ruido; 0.10 equivale aproximadamente al 10 por ciento
+    gui_hint: 0,3,1,1
+    label: Ruido relativo
+    min_len: '250'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0.0'
+    step: '0.05'
+    stop: '0.40'
+    value: '0.0'
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1232, 20.0]
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: Frecuencia de muestreo
+    value: '8000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [248, 16.0]
+    rotation: 0
+    state: enabled
+- name: tipo_onda
+  id: variable_qtgui_chooser
+  parameters:
+    comment: ''
+    gui_hint: 0,0,1,1
+    label: Tipo de onda
+    label0: ''
+    label1: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    labels: '["Senoidal", "Cuadrada", "Triangular"]'
+    num_opts: '0'
+    option0: '101'
+    option1: '103'
+    option2: '104'
+    option3: '3'
+    option4: '4'
+    options: '[101, 103, 104]'
+    orient: Qt.QVBoxLayout
+    type: int
+    value: '101'
+    widget: combo_box
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1040, 20.0]
+    rotation: 0
+    state: enabled
+- name: analog_noise_source_x_0
+  id: analog_noise_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: ruido_relativo * amplitud
+    comment: Ruido gaussiano opcional
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    noise_type: analog.GR_GAUSSIAN
+    seed: '42'
+    type: float
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [72, 644.0]
+    rotation: 0
+    state: enabled
+- name: analog_sig_source_x_0
+  id: analog_sig_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: amplitud
+    comment: Fase inicial fija de 45 grados
+    freq: frecuencia
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    phase: '0.7853981633974483'
+    samp_rate: samp_rate
+    showports: 'False'
+    type: float
+    waveform: tipo_onda
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [32, 316.0]
+    rotation: 0
+    state: enabled
+- name: blocks_add_xx_0
+  id: blocks_add_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: "Encargada de sumar \nla se\xF1al fuente y\nel ruido"
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_inputs: '2'
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [536, 520.0]
+    rotation: 0
+    state: enabled
+- name: blocks_stream_to_vector_0
+  id: blocks_stream_to_vector
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: agrupa 1024 muestras
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_items: numero_muestras
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1080, 536.0]
+    rotation: 0
+    state: enabled
+- name: blocks_throttle2_0
+  id: blocks_throttle2
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: "Regula el paso de la se\xF1al simulada a \n8000 muestras por segundo,\n\
+      la tasa de muestreo usada durante el \nentrenamiento."
+    ignoretag: 'True'
+    limit: auto
+    maximum: '0.1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samples_per_second: samp_rate
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [760, 520.0]
     rotation: 0
     state: enabled
 - name: epy_block_0
@@ -68,10 +274,182 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [624, 336.0]
+    coordinate: [1376, 472.0]
     rotation: 0
     state: enabled
-connections: []
+- name: qtgui_number_sink_0
+  id: qtgui_number_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    autoscale: 'False'
+    avg: '0'
+    color1: ("black", "black")
+    color10: ("black", "black")
+    color2: ("black", "black")
+    color3: ("black", "black")
+    color4: ("black", "black")
+    color5: ("black", "black")
+    color6: ("black", "black")
+    color7: ("black", "black")
+    color8: ("black", "black")
+    color9: ("black", "black")
+    comment: "Los par\xE1metros valen cero cuando la decisi\xF3n es no senoidal"
+    factor1: '100'
+    factor10: '1'
+    factor2: '1'
+    factor3: '1'
+    factor4: '1'
+    factor5: '1'
+    factor6: '1'
+    factor7: '1'
+    factor8: '1'
+    factor9: '1'
+    graph_type: qtgui.NUM_GRAPH_NONE
+    gui_hint: 2,0,1,4
+    label1: Probabilidad senoidal
+    label10: ''
+    label2: Es senoidal
+    label3: Frecuencia estimada
+    label4: Amplitud estimada
+    label5: Fase estimada
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    max: '1000'
+    min: '0'
+    name: Resultados CNN 1D
+    nconnections: '5'
+    type: float
+    unit1: '%'
+    unit10: ''
+    unit2: 1/0
+    unit3: Hz
+    unit4: ''
+    unit5: grados
+    unit6: ''
+    unit7: ''
+    unit8: ''
+    unit9: ''
+    update_time: '0.10'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1672, 472.0]
+    rotation: 0
+    state: enabled
+- name: qtgui_time_sink_x_0
+  id: qtgui_time_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'True'
+    axislabels: 'True'
+    color1: blue
+    color10: blue
+    color2: green
+    color3: black
+    color4: cyan
+    color5: magenta
+    color6: yellow
+    color7: dark red
+    color8: dark green
+    color9: dark green
+    comment: "Se\xF1al que realmente recibe la CNN"
+    ctrlpanel: 'False'
+    entags: 'True'
+    grid: 'True'
+    gui_hint: 1,0,1,4
+    label1: "Se\xF1al de entrada"
+    label10: Signal 10
+    label2: Signal 2
+    label3: Signal 3
+    label4: Signal 4
+    label5: Signal 5
+    label6: Signal 6
+    label7: Signal 7
+    label8: Signal 8
+    label9: Signal 9
+    legend: 'True'
+    marker1: '1'
+    marker10: '1'
+    marker2: '1'
+    marker3: '1'
+    marker4: '1'
+    marker5: '1'
+    marker6: '1'
+    marker7: '1'
+    marker8: '1'
+    marker9: '1'
+    name: "Se\xF1al recibida"
+    nconnections: '1'
+    size: numero_muestras
+    srate: samp_rate
+    stemplot: 'False'
+    style1: '1'
+    style10: '1'
+    style2: '1'
+    style3: '1'
+    style4: '1'
+    style5: '1'
+    style6: '1'
+    style7: '1'
+    style8: '1'
+    style9: '1'
+    tr_chan: '0'
+    tr_delay: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: float
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    ylabel: Amplitude
+    ymax: '1'
+    ymin: '-1'
+    yunit: '""'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1080, 300.0]
+    rotation: 0
+    state: enabled
+
+connections:
+- [analog_noise_source_x_0, '0', blocks_add_xx_0, '1']
+- [analog_sig_source_x_0, '0', blocks_add_xx_0, '0']
+- [blocks_add_xx_0, '0', blocks_throttle2_0, '0']
+- [blocks_stream_to_vector_0, '0', epy_block_0, '0']
+- [blocks_throttle2_0, '0', blocks_stream_to_vector_0, '0']
+- [blocks_throttle2_0, '0', qtgui_time_sink_x_0, '0']
+- [epy_block_0, '0', qtgui_number_sink_0, '0']
+- [epy_block_0, '1', qtgui_number_sink_0, '1']
+- [epy_block_0, '2', qtgui_number_sink_0, '2']
+- [epy_block_0, '3', qtgui_number_sink_0, '3']
+- [epy_block_0, '4', qtgui_number_sink_0, '4']
 
 metadata:
   file_format: 1
