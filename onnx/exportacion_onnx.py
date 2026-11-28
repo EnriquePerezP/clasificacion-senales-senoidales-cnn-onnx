@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
@@ -10,10 +11,12 @@ from torch import nn
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from modelos.clasificador_cnn.evaluacion_modelo import cargar_modelo_entrenado
 from modelos.clasificador_cnn.prueba_clasificador_ruido.experimento_ruido import (
     RUTA_MODELO_RUIDO,
 )
 from modelos.estimador_cnn.entrenar_estimador import RUTA_MEJOR_ESTIMADOR
+from modelos.estimador_cnn.evaluacion_modelo import cargar_estimador
 from modelos.generador_senales import (
     AMPLITUD_MAXIMA,
     AMPLITUD_MINIMA,
@@ -226,8 +229,47 @@ def exportar_modelos_entrenados(
     }
 
 
-def main():
+def exportar_checkpoint_onnx(tipo, ruta_checkpoint, ruta_onnx):
+    """Exporta un checkpoint de cualquier dispositivo y valida lotes de 1 y 3."""
+
+    if tipo == "detector":
+        modelo, _ = cargar_modelo_entrenado(ruta_checkpoint)
+        exportar = exportar_detector_onnx
+    elif tipo == "estimador":
+        modelo, _ = cargar_estimador(ruta_checkpoint)
+        exportar = exportar_estimador_onnx
+    else:
+        raise ValueError(f"Tipo de modelo desconocido: {tipo}.")
+
+    ruta_onnx = _preparar_ruta(ruta_onnx)
+    if ruta_onnx.suffix.lower() != ".onnx":
+        raise ValueError("La ruta de salida debe terminar en .onnx.")
+    if ruta_onnx.resolve() in (RUTA_DETECTOR_ONNX.resolve(), RUTA_ESTIMADOR_ONNX.resolve()):
+        raise ValueError("Indica una ruta distinta de los archivos ONNX originales.")
+    with TemporaryDirectory(dir=ruta_onnx.parent) as carpeta:
+        temporal = Path(carpeta) / ruta_onnx.name
+        exportar(modelo, temporal, numero_muestras=modelo.numero_muestras)
+        diferencia = comparar_pytorch_onnx(
+            modelo, temporal, tipo == "detector", modelo.numero_muestras
+        )
+        temporal.replace(ruta_onnx)
+    return diferencia
+
+
+def main(argv=None):
     """Exporta ambos modelos y muestra el resultado de la comprobación."""
+
+    parser = argparse.ArgumentParser(description="Exporta y valida modelos en ONNX.")
+    parser.add_argument("--tipo", choices=("detector", "estimador"))
+    parser.add_argument("--checkpoint", type=Path)
+    parser.add_argument("--salida", type=Path)
+    args = parser.parse_args(argv)
+    if any((args.tipo, args.checkpoint, args.salida)):
+        if not all((args.tipo, args.checkpoint, args.salida)):
+            parser.error("Proporciona --tipo, --checkpoint y --salida juntos.")
+        diferencia = exportar_checkpoint_onnx(args.tipo, args.checkpoint, args.salida)
+        print(f"ONNX validado en {args.salida} | diferencia máxima: {diferencia:.3g}")
+        return
 
     resultado = exportar_modelos_entrenados()
 

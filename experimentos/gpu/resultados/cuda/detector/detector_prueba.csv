@@ -1,0 +1,2 @@
+umbral,cantidad_ejemplos,cantidad_aciertos,cantidad_errores,perdida,exactitud,confianza_promedio,verdaderos_positivos,verdaderos_negativos,falsos_positivos,falsos_negativos,precision_senoidal,deteccion_senoidales
+0.5,90,78,12,0.3110544476244185,0.8666666666666667,0.8115420871310763,41,37,8,4,0.8367346938775511,0.9111111111111111

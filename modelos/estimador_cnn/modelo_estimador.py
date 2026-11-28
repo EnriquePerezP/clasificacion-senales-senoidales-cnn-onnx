@@ -6,6 +6,27 @@ from torch import nn
 from modelos.generador_senales import NUMERO_MUESTRAS
 
 
+class AdaptiveAvgPool1dDeterminista(nn.AdaptiveAvgPool1d):
+    """Calcula las mismas ventanas en CUDA con operaciones de gradiente determinista."""
+
+    def forward(self, entrada):
+        if not (entrada.is_cuda and torch.is_grad_enabled() and entrada.requires_grad):
+            return super().forward(entrada)
+
+        longitud = entrada.shape[-1]
+        ventanas = self.output_size
+        if longitud % ventanas == 0:
+            return entrada.reshape(*entrada.shape[:-1], ventanas, longitud // ventanas).mean(dim=-1)
+
+        # El promedio adaptativo usa piso al inicio y techo al final de cada ventana.
+        promedios = []
+        for i in range(ventanas):
+            inicio = i * longitud // ventanas
+            fin = ((i + 1) * longitud + ventanas - 1) // ventanas
+            promedios.append(entrada[..., inicio:fin].mean(dim=-1))
+        return torch.stack(promedios, dim=-1)
+
+
 class EstimadorParametrosCNN(nn.Module):
     """
     CNN 1D que estima la frecuencia, amplitud y fase de una senoidal.
@@ -46,7 +67,7 @@ class EstimadorParametrosCNN(nn.Module):
 
         # El resumen conserva ocho posiciones de la señal, que aportan
         # información sobre el inicio de la onda para estimar la fase.
-        self.resumen = nn.AdaptiveAvgPool1d(output_size=8)
+        self.resumen = AdaptiveAvgPool1dDeterminista(output_size=8)
         self.capas_compartidas = nn.Sequential(
             nn.Flatten(),
             nn.Linear(in_features=64 * 8, out_features=128),

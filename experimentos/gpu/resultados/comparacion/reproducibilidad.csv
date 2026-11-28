@@ -1,0 +1,9 @@
+caso,dispositivo,epocas_verificadas,diferencia_maxima_metricas_epoca,mejor_epoca,tensores_checkpoint_identicos,metricas_prueba_identicas
+detector,cpu,20,0.0,15,True,True
+detector,cuda,20,0.0,15,True,True
+estimador,cpu,20,0.0,7,True,True
+estimador,cuda,20,0.0,18,True,True
+limpio,cpu,20,0.0,17,True,True
+limpio,cuda,20,0.0,20,True,True
+aumentado,cpu,20,0.0,15,True,True
+aumentado,cuda,20,0.0,15,True,True

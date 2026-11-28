@@ -1,0 +1,6 @@
+intensidad_ruido,exactitud_modelo_limpio,exactitud_modelo_robusto,aciertos_modelo_limpio,aciertos_modelo_robusto,total_senales
+0.0,0.955556,0.922222,86,83,90
+0.05,0.711111,0.911111,64,82,90
+0.1,0.500000,0.944444,45,85,90
+0.2,0.500000,0.922222,45,83,90
+0.4,0.500000,0.500000,45,45,90

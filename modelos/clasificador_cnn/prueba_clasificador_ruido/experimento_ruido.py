@@ -1,3 +1,4 @@
+import argparse
 import csv
 import sys
 from pathlib import Path
@@ -31,6 +32,14 @@ from modelos.dataset import (
     INTENSIDAD_RUIDO_MINIMA,
     SEMILLA,
     crear_dataset,
+)
+from modelos.ejecucion_entrenamiento import (
+    agregar_argumentos_entrenamiento,
+    configurar_entrenamiento,
+    crear_modelo_inicial,
+    guardar_registro,
+    resolver_dispositivo,
+    resolver_ruta_checkpoint,
 )
 from modelos.ruido import (
     RUIDO_ALTO,
@@ -183,6 +192,7 @@ def evaluar_niveles_de_ruido(
     grupo_prueba,
     niveles=NIVELES_RUIDO,
     semilla=SEMILLA + 2,
+    dispositivo=None,
 ):
     """Evalúa cada nivel con ruido reproducible e independiente del aumento."""
 
@@ -194,37 +204,45 @@ def evaluar_niveles_de_ruido(
             semilla=semilla + posicion,
         )
         cargador = _crear_cargador_prueba(muestras, grupo_prueba["clases"])
-        resultado = evaluar_modelo(modelo, cargador)
+        resultado = evaluar_modelo(modelo, cargador, dispositivo)
         resultado["intensidad_ruido"] = float(intensidad)
         resultados.append(resultado)
 
     return resultados
 
 
-def _entrenar_modelo(divisiones, ruta_modelo, mostrar_progreso):
-    torch.manual_seed(SEMILLA)
+def _entrenar_modelo(divisiones, ruta_modelo, mostrar_progreso, dispositivo):
+    configurar_entrenamiento(dispositivo)
     cargadores = crear_cargadores(divisiones, semilla=SEMILLA)
 
-    modelo = DetectorSenoidalCNN()
+    modelo, huella = crear_modelo_inicial(DetectorSenoidalCNN, dispositivo)
     funcion_perdida, optimizador = crear_componentes_entrenamiento(modelo)
-    return entrenar_varias_epocas(
+    resultado = entrenar_varias_epocas(
         modelo=modelo,
         cargadores=cargadores,
         funcion_perdida=funcion_perdida,
         optimizador=optimizador,
         ruta_mejor_modelo=ruta_modelo,
+        dispositivo=dispositivo,
         mostrar_progreso=mostrar_progreso,
     )
+    resultado["sha256_estado_inicial"] = huella
+    return resultado
 
 
-def entrenar_modelo_con_ruido(divisiones, mostrar_progreso=True):
+def entrenar_modelo_con_ruido(
+    divisiones, mostrar_progreso=True, dispositivo=None, ruta_modelo=None
+):
     """Entrena una nueva CNN con señales limpias y copias ruidosas."""
 
+    dispositivo = torch.device(dispositivo or "cpu")
+    ruta_modelo = resolver_ruta_checkpoint(ruta_modelo, RUTA_MODELO_RUIDO, dispositivo)
     divisiones_aumentadas = crear_divisiones_aumentadas(divisiones)
     resultado = _entrenar_modelo(
         divisiones_aumentadas,
-        RUTA_MODELO_RUIDO,
+        ruta_modelo,
         mostrar_progreso,
+        dispositivo,
     )
     resultado["cantidad_entrenamiento"] = len(
         divisiones_aumentadas["entrenamiento"]["clases"]
@@ -235,11 +253,13 @@ def entrenar_modelo_con_ruido(divisiones, mostrar_progreso=True):
     return resultado
 
 
-def guardar_comparacion_csv(resultados_limpio, resultados_robusto):
+def guardar_comparacion_csv(
+    resultados_limpio, resultados_robusto, ruta_salida=RUTA_RESULTADOS_CSV
+):
     """Guarda los números de la comparación para poder revisarlos después."""
 
-    RUTA_RESULTADOS_CSV.parent.mkdir(parents=True, exist_ok=True)
-    with RUTA_RESULTADOS_CSV.open("w", newline="", encoding="utf-8") as archivo:
+    ruta_salida.parent.mkdir(parents=True, exist_ok=True)
+    with ruta_salida.open("w", newline="", encoding="utf-8") as archivo:
         escritor = csv.writer(archivo)
         escritor.writerow(
             [
@@ -264,14 +284,14 @@ def guardar_comparacion_csv(resultados_limpio, resultados_robusto):
             )
 
 
-def guardar_grafica(resultados_limpio, resultados_robusto):
+def guardar_grafica(resultados_limpio, resultados_robusto, ruta_salida=RUTA_GRAFICA_RUIDO):
     """Dibuja cuánto cambia la exactitud al aumentar el ruido."""
 
     niveles = [resultado["intensidad_ruido"] for resultado in resultados_limpio]
     exactitud_limpio = [resultado["exactitud"] * 100 for resultado in resultados_limpio]
     exactitud_robusto = [resultado["exactitud"] * 100 for resultado in resultados_robusto]
 
-    RUTA_GRAFICA_RUIDO.parent.mkdir(parents=True, exist_ok=True)
+    ruta_salida.parent.mkdir(parents=True, exist_ok=True)
     figura, grafica = plt.subplots(figsize=(9, 5.5))
     grafica.plot(
         niveles,
@@ -295,7 +315,7 @@ def guardar_grafica(resultados_limpio, resultados_robusto):
     grafica.grid(True, alpha=0.3)
     grafica.legend()
     figura.tight_layout()
-    figura.savefig(RUTA_GRAFICA_RUIDO, dpi=160)
+    figura.savefig(ruta_salida, dpi=160)
     plt.close(figura)
 
 
@@ -312,48 +332,71 @@ def mostrar_tabla(resultados_limpio, resultados_robusto):
         )
 
 
-def main():
+def main(argv=None):
     """Compara el entrenamiento con señales limpias y con aumento de ruido."""
 
-    print("Experimento de ruido para el clasificador CNN")
+    parser = argparse.ArgumentParser(description="Compara el entrenamiento con y sin aumento de ruido.")
+    agregar_argumentos_entrenamiento(parser)
+    args = parser.parse_args(argv)
+    dispositivo = resolver_dispositivo(args.dispositivo)
+    configurar_entrenamiento(dispositivo, hilos_cpu=args.hilos_cpu)
+    carpeta = args.salida / dispositivo.type / "ruido"
+    ruta_modelo_limpio = carpeta / "detector_senoidal_cnn_limpio.pt"
+    ruta_modelo_robusto = carpeta / RUTA_MODELO_RUIDO.name
+
+    print(f"Experimento de ruido para el clasificador CNN en {dispositivo}")
     with TemporaryDirectory() as carpeta_temporal:
         ruta_dataset_limpio = Path(carpeta_temporal) / "dataset_senales_limpias.csv"
-        ruta_modelo_limpio = Path(carpeta_temporal) / "detector_senoidal_cnn_limpio.pt"
 
         print("1. Generando y dividiendo un dataset limpio temporal...")
         crear_dataset(ruta_salida=ruta_dataset_limpio, ruido_activado=False)
         divisiones = preparar_datos(ruta_dataset=ruta_dataset_limpio)
 
-        print("2. Entrenando la CNN con señales limpias...")
-        entrenamiento_limpio = _entrenar_modelo(
-            divisiones,
-            ruta_modelo_limpio,
-            mostrar_progreso=True,
-        )
-        print(f"   Mejor época: {entrenamiento_limpio['mejor_epoca']}")
-        modelo_limpio, _ = cargar_modelo_entrenado(ruta_modelo_limpio)
+    print("2. Entrenando la CNN con señales limpias...")
+    entrenamiento_limpio = _entrenar_modelo(
+        divisiones, ruta_modelo_limpio, True, dispositivo
+    )
+    print(f"   Mejor época: {entrenamiento_limpio['mejor_epoca']}")
 
     print("3. Entrenando otra CNN con señales limpias y ruidosas...")
-    entrenamiento = entrenar_modelo_con_ruido(divisiones)
+    if dispositivo.type == "cuda":
+        torch.cuda.empty_cache()
+    entrenamiento = entrenar_modelo_con_ruido(
+        divisiones, dispositivo=dispositivo, ruta_modelo=ruta_modelo_robusto
+    )
     print(
         "   Señales usadas para entrenar: "
         f"{entrenamiento['cantidad_entrenamiento']}"
     )
     print(f"   Mejor época: {entrenamiento['mejor_epoca']}")
 
-    modelo_robusto, _ = cargar_modelo_entrenado(RUTA_MODELO_RUIDO)
+    modelo_limpio, _ = cargar_modelo_entrenado(ruta_modelo_limpio, dispositivo)
+    modelo_robusto, _ = cargar_modelo_entrenado(ruta_modelo_robusto, dispositivo)
     print("4. Evaluando ambos modelos con las mismas señales y el mismo ruido...")
-    resultados_limpio = evaluar_niveles_de_ruido(modelo_limpio, divisiones["prueba"])
-    resultados_robusto = evaluar_niveles_de_ruido(modelo_robusto, divisiones["prueba"])
+    resultados_limpio = evaluar_niveles_de_ruido(
+        modelo_limpio, divisiones["prueba"], dispositivo=dispositivo
+    )
+    resultados_robusto = evaluar_niveles_de_ruido(
+        modelo_robusto, divisiones["prueba"], dispositivo=dispositivo
+    )
 
-    guardar_comparacion_csv(resultados_limpio, resultados_robusto)
-    guardar_grafica(resultados_limpio, resultados_robusto)
+    for caso, resultado, evaluacion in (
+        ("limpio", entrenamiento_limpio, resultados_limpio),
+        ("aumentado", entrenamiento, resultados_robusto),
+    ):
+        for fila in evaluacion:
+            fila.pop("ejemplos")
+        guardar_registro(
+            carpeta, caso, dispositivo, resultado["sha256_estado_inicial"], resultado, evaluacion
+        )
+    guardar_comparacion_csv(resultados_limpio, resultados_robusto, carpeta / RUTA_RESULTADOS_CSV.name)
+    guardar_grafica(resultados_limpio, resultados_robusto, carpeta / RUTA_GRAFICA_RUIDO.name)
     mostrar_tabla(resultados_limpio, resultados_robusto)
 
     print()
-    print(f"Modelo con aumento de ruido guardado en: {RUTA_MODELO_RUIDO}")
-    print(f"Resultados numéricos guardados en: {RUTA_RESULTADOS_CSV}")
-    print(f"Gráfica guardada en: {RUTA_GRAFICA_RUIDO}")
+    print(f"Modelo con aumento de ruido guardado en: {ruta_modelo_robusto}")
+    print(f"Resultados numéricos guardados en: {carpeta / RUTA_RESULTADOS_CSV.name}")
+    print(f"Gráfica guardada en: {carpeta / RUTA_GRAFICA_RUIDO.name}")
 
 
 if __name__ == "__main__":

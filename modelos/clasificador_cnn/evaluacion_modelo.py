@@ -38,7 +38,7 @@ def cargar_modelo_entrenado(ruta_modelo=RUTA_MEJOR_MODELO, dispositivo=None):
 
     contenido = torch.load(
         ruta_modelo,
-        map_location=dispositivo,
+        map_location="cpu",
         weights_only=True,
     )
 

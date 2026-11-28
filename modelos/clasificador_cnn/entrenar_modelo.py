@@ -1,7 +1,9 @@
+import argparse
 import sys
 from math import isfinite
 from numbers import Real
 from pathlib import Path
+from time import perf_counter
 
 import torch
 from torch import nn
@@ -16,6 +18,17 @@ from modelos.clasificador_cnn.division_datos import (
 )
 from modelos.clasificador_cnn.modelo_cnn import DetectorSenoidalCNN
 from modelos.dataset import SEMILLA
+from modelos.ejecucion_entrenamiento import (
+    MedicionEpoca,
+    agregar_argumentos_entrenamiento,
+    configurar_entrenamiento,
+    crear_modelo_inicial,
+    guardar_checkpoint,
+    guardar_registro,
+    resolver_dispositivo,
+    resolver_ruta_checkpoint,
+    sincronizar,
+)
 
 
 TASA_APRENDIZAJE = PARAMETROS_ENTRENAMIENTO["Tasa de aprendizaje"]
@@ -61,8 +74,9 @@ def entrenar_una_epoca(
     modelo.to(dispositivo)
     modelo.train()
 
-    perdida_acumulada = 0.0
-    cantidad_aciertos = 0
+    perdidas = []
+    aciertos = []
+    tamanos = []
     cantidad_ejemplos = 0
 
     for muestras, clases_correctas in cargador_entrenamiento:
@@ -85,20 +99,23 @@ def entrenar_una_epoca(
         optimizador.step()
 
         cantidad_lote = len(clases_correctas)
-        perdida_acumulada += perdida.item() * cantidad_lote
+        perdidas.append(perdida.detach())
+        tamanos.append(cantidad_lote)
         cantidad_ejemplos += cantidad_lote
 
         # Una salida mayor o igual que cero corresponde a la clase 1.
         # Una salida menor que cero corresponde a la clase 0.
         predicciones = (salidas >= 0).to(dtype=clases_correctas.dtype)
-        cantidad_aciertos += int((predicciones == clases_correctas).sum().item())
+        aciertos.append((predicciones == clases_correctas).sum())
 
     if cantidad_ejemplos == 0:
         raise ValueError("El cargador de entrenamiento está vacío.")
 
     return {
-        "perdida": perdida_acumulada / cantidad_ejemplos,
-        "exactitud": cantidad_aciertos / cantidad_ejemplos,
+        "perdida": sum(
+            perdida * tamano for perdida, tamano in zip(torch.stack(perdidas).tolist(), tamanos)
+        ) / cantidad_ejemplos,
+        "exactitud": torch.stack(aciertos).sum().item() / cantidad_ejemplos,
         "cantidad_ejemplos": cantidad_ejemplos,
     }
 
@@ -122,8 +139,9 @@ def validar_modelo(
     modelo.to(dispositivo)
     modelo.eval()
 
-    perdida_acumulada = 0.0
-    cantidad_aciertos = 0
+    perdidas = []
+    aciertos = []
+    tamanos = []
     cantidad_ejemplos = 0
 
     # no_grad evita que PyTorch prepare correcciones durante la validación.
@@ -136,20 +154,21 @@ def validar_modelo(
             perdida = funcion_perdida(salidas, clases_correctas)
 
             cantidad_lote = len(clases_correctas)
-            perdida_acumulada += perdida.item() * cantidad_lote
+            perdidas.append(perdida)
+            tamanos.append(cantidad_lote)
             cantidad_ejemplos += cantidad_lote
 
             predicciones = (salidas >= 0).to(dtype=clases_correctas.dtype)
-            cantidad_aciertos += int(
-                (predicciones == clases_correctas).sum().item()
-            )
+            aciertos.append((predicciones == clases_correctas).sum())
 
     if cantidad_ejemplos == 0:
         raise ValueError("El cargador de validación está vacío.")
 
     return {
-        "perdida": perdida_acumulada / cantidad_ejemplos,
-        "exactitud": cantidad_aciertos / cantidad_ejemplos,
+        "perdida": sum(
+            perdida * tamano for perdida, tamano in zip(torch.stack(perdidas).tolist(), tamanos)
+        ) / cantidad_ejemplos,
+        "exactitud": torch.stack(aciertos).sum().item() / cantidad_ejemplos,
         "cantidad_ejemplos": cantidad_ejemplos,
     }
 
@@ -163,10 +182,8 @@ def guardar_modelo(
 ):
     """Guarda el estado necesario para utilizar o continuar el modelo."""
 
-    ruta_salida = Path(ruta_salida)
-    ruta_salida.parent.mkdir(parents=True, exist_ok=True)
-
-    torch.save(
+    guardar_checkpoint(
+        ruta_salida,
         {
             "epoca": epoca,
             "numero_muestras": modelo.numero_muestras,
@@ -175,7 +192,6 @@ def guardar_modelo(
             "perdida_validacion": resultado_validacion["perdida"],
             "exactitud_validacion": resultado_validacion["exactitud"],
         },
-        ruta_salida,
     )
 
 
@@ -185,7 +201,7 @@ def entrenar_varias_epocas(
     funcion_perdida,
     optimizador,
     numero_epocas=NUMERO_EPOCAS,
-    ruta_mejor_modelo=RUTA_MEJOR_MODELO,
+    ruta_mejor_modelo=None,
     dispositivo=None,
     mostrar_progreso=True,
 ):
@@ -200,27 +216,32 @@ def entrenar_varias_epocas(
     if "entrenamiento" not in cargadores or "validacion" not in cargadores:
         raise ValueError("Se necesitan los cargadores de entrenamiento y validación.")
 
-    if dispositivo is None:
-        dispositivo = torch.device("cpu")
+    dispositivo = torch.device(dispositivo or "cpu")
+    ruta_mejor_modelo = resolver_ruta_checkpoint(
+        ruta_mejor_modelo, RUTA_MEJOR_MODELO, dispositivo
+    )
 
     mejor_perdida_validacion = float("inf")
     mejor_epoca = 0
     historial = []
 
+    sincronizar(dispositivo)
+    inicio = perf_counter()
     for epoca in range(1, numero_epocas + 1):
-        resultado_entrenamiento = entrenar_una_epoca(
-            modelo=modelo,
-            cargador_entrenamiento=cargadores["entrenamiento"],
-            funcion_perdida=funcion_perdida,
-            optimizador=optimizador,
-            dispositivo=dispositivo,
-        )
-        resultado_validacion = validar_modelo(
-            modelo=modelo,
-            cargador_validacion=cargadores["validacion"],
-            funcion_perdida=funcion_perdida,
-            dispositivo=dispositivo,
-        )
+        with MedicionEpoca(dispositivo) as medicion:
+            resultado_entrenamiento = entrenar_una_epoca(
+                modelo=modelo,
+                cargador_entrenamiento=cargadores["entrenamiento"],
+                funcion_perdida=funcion_perdida,
+                optimizador=optimizador,
+                dispositivo=dispositivo,
+            )
+            resultado_validacion = validar_modelo(
+                modelo=modelo,
+                cargador_validacion=cargadores["validacion"],
+                funcion_perdida=funcion_perdida,
+                dispositivo=dispositivo,
+            )
 
         es_mejor_modelo = (
             resultado_validacion["perdida"] < mejor_perdida_validacion
@@ -244,6 +265,7 @@ def entrenar_varias_epocas(
                 "perdida_validacion": resultado_validacion["perdida"],
                 "exactitud_validacion": resultado_validacion["exactitud"],
                 "es_mejor_modelo": es_mejor_modelo,
+                **medicion.datos,
             }
         )
 
@@ -253,28 +275,43 @@ def entrenar_varias_epocas(
                 f"Época {epoca:02d}/{numero_epocas} | "
                 f"entrenamiento: {resultado_entrenamiento['exactitud']:.2%} | "
                 f"validación: {resultado_validacion['exactitud']:.2%} | "
-                f"pérdida validación: {resultado_validacion['perdida']:.4f}"
+                f"pérdida validación: {resultado_validacion['perdida']:.4f} | "
+                f"{medicion.datos['tiempo_epoca_s']:.3f} s"
                 f"{marca_mejor}"
             )
 
+    sincronizar(dispositivo)
     return {
+        "tiempo_total_s": perf_counter() - inicio,
         "historial": historial,
         "mejor_epoca": mejor_epoca,
         "mejor_perdida_validacion": mejor_perdida_validacion,
         "ruta_mejor_modelo": Path(ruta_mejor_modelo),
+        "cargadores": cargadores,
+        "tasa_aprendizaje": optimizador.param_groups[0]["lr"],
     }
 
 
-def main():
+def main(argv=None):
     """Entrena varias épocas y guarda la mejor versión encontrada."""
 
-    torch.manual_seed(SEMILLA)
+    from modelos.clasificador_cnn.evaluacion_modelo import (
+        cargar_modelo_entrenado,
+        evaluar_modelo,
+    )
+
+    parser = argparse.ArgumentParser(description="Entrena el detector CNN.")
+    agregar_argumentos_entrenamiento(parser)
+    args = parser.parse_args(argv)
+    dispositivo = resolver_dispositivo(args.dispositivo)
+    configurar_entrenamiento(dispositivo, hilos_cpu=args.hilos_cpu)
+    carpeta = args.salida / dispositivo.type / "detector"
 
     cargadores = preparar_cargadores(semilla=SEMILLA)
-    modelo = DetectorSenoidalCNN()
+    modelo, huella = crear_modelo_inicial(DetectorSenoidalCNN, dispositivo)
     funcion_perdida, optimizador = crear_componentes_entrenamiento(modelo)
 
-    print("Inicio del entrenamiento")
+    print(f"Inicio del entrenamiento en {dispositivo}")
     print(f"Señales de entrenamiento: {len(cargadores['entrenamiento'].dataset)}")
     print(f"Señales de validación: {len(cargadores['validacion'].dataset)}")
     print(f"Tamaño del lote: {cargadores['entrenamiento'].batch_size}")
@@ -287,10 +324,16 @@ def main():
         funcion_perdida=funcion_perdida,
         optimizador=optimizador,
         numero_epocas=NUMERO_EPOCAS,
-        ruta_mejor_modelo=RUTA_MEJOR_MODELO,
+        ruta_mejor_modelo=carpeta / RUTA_MEJOR_MODELO.name,
+        dispositivo=dispositivo,
     )
 
+    modelo, _ = cargar_modelo_entrenado(resultado["ruta_mejor_modelo"], dispositivo)
+    prueba = evaluar_modelo(modelo, cargadores["prueba"], dispositivo)
+    prueba.pop("ejemplos")
+    guardar_registro(carpeta, "detector", dispositivo, huella, resultado, [prueba])
     print("Entrenamiento terminado")
+    print(f"Exactitud de prueba: {prueba['exactitud']:.2%}")
     print(f"Mejor época: {resultado['mejor_epoca']}")
     print(f"Menor pérdida de validación: {resultado['mejor_perdida_validacion']:.4f}")
     print(f"Modelo guardado en: {resultado['ruta_mejor_modelo']}")
